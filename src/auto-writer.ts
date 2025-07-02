@@ -25,6 +25,7 @@ export class AutoWriter {
     useDefine?: boolean;
     spaces?: boolean;
     indentation?: number;
+    additionalRelation?: string[];
   };
   constructor(tableData: TableData, options: AutoOptions) {
     this.tableText = tableData.text as { [name: string]: string };
@@ -98,6 +99,7 @@ export class AutoWriter {
   private createAssociations(typeScript: boolean) {
     let strBelongs = "";
     let strBelongsToMany = "";
+    let strAdditionals = "";
     const sp = this.space[1];
 
     const rels = this.relations;
@@ -118,9 +120,11 @@ export class AutoWriter {
         strBelongs += `${sp}${rel.parentModel}.${hasRel}(${rel.childModel}, { ${hAlias}foreignKey: "${rel.parentId}"});\n`;
       }
     });
-
-    // belongsToMany must come first
-    return strBelongsToMany + strBelongs;
+    if (this.options.additionalRelation && this.options.additionalRelation.length > 0) {
+      strAdditionals = `\n${sp}//additional relations\n${sp}${this.options.additionalRelation.join(`\n${sp}`)}\n`;
+    }
+    // belongsToMany must come first, custom relations are added at the end
+    return strBelongsToMany + strBelongs + strAdditionals;
   }
 
   // create the TypeScript init-models file to load all the models into Sequelize

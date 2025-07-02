@@ -21,6 +21,7 @@ export class AutoGenerator {
     caseFile?: CaseFileOption;
     skipFields?: string[];
     additional?: any;
+    additionalTable?: { [tableName: string]: any };
     schema?: string;
     singularize: boolean;
     useDefine: boolean;
@@ -165,15 +166,16 @@ export class AutoGenerator {
 
     const [schemaName, tableNameOrig] = qNameSplit(table);
     const space = this.space;
-    let timestamps = (this.options.additional && this.options.additional.timestamps === true) || false;
-    let paranoid = (this.options.additional && this.options.additional.paranoid === true) || false;
+    const tableOptions = this.options.additionalTable?.[table] ?? {};
+    let timestamps = tableOptions?.timestamps != undefined ? tableOptions?.timestamps : (this.options.additional?.timestamps ?? false);
+    let paranoid = tableOptions?.paranoid != undefined ? tableOptions?.paranoid : (this.options.additional?.paranoid ?? false);
 
     // add all the fields
     let str = '';
     const fields = _.keys(this.tables[table]);
     fields.forEach((field, index) => {
-      timestamps ||= this.isTimestampField(field);
-      paranoid ||= this.isParanoidField(field);
+      timestamps ||= this.isTimestampField(field, tableOptions);
+      paranoid ||= this.isParanoidField(field, tableOptions);
 
       str += this.addField(table, field);
     });
@@ -753,8 +755,7 @@ export class AutoGenerator {
     }
   }
 
-  private isTimestampField(field: string) {
-    const additional = this.options.additional;
+  private isTimestampField(field: string, additional: any = this.options.additional) {;
     if (additional.timestamps === false) {
       return false;
     }
@@ -762,8 +763,7 @@ export class AutoGenerator {
       || ((!additional.updatedAt && recase('c', field) === 'updatedAt') || additional.updatedAt === field);
   }
 
-  private isParanoidField(field: string) {
-    const additional = this.options.additional;
+  private isParanoidField(field: string, additional: any = this.options.additional) {
     if (additional.timestamps === false || additional.paranoid === false) {
       return false;
     }

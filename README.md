@@ -6,9 +6,17 @@
 
 Automatically generate models for [SequelizeJS](https://github.com/sequelize/sequelize) via the command line.
 
+## Note
+
+This package is clone and up-to-date with [original package](https://github.com/sequelize/sequelize-auto) plus some additionals options
+
+- additionalTable: Allow to define per-table additional Options and will be overwrite `additional` (if defined) (0.8.9)
+- additionalRelation: Allow to add user custom relations to init-models file (0.8.9)
+
+
 ## Install
 
-    npm install sequelize-auto
+    npm install @chiendv/sequelize-auto
 
 ## Prerequisites
 
@@ -365,6 +373,14 @@ const auto = new SequelizeAuto('database', 'user', 'pass', {
         timestamps: false
         // ...options added to each model
     },
+    additionalTable: {
+      // override per table
+      "Customer": { paranoid: false },
+      "Product": { timestamps: false }
+    },
+    additionalRelation:[
+      Customer.belongsToMany(Product, { as: 'customerProducts', through: OrderItem, foreignKey: "order_id", otherKey: "product_id" });
+    ],
     tables: ['table1', 'table2', 'myschema.table3'] // use all tables, if omitted
     //...
 })
