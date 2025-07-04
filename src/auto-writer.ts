@@ -25,7 +25,7 @@ export class AutoWriter {
     useDefine?: boolean;
     spaces?: boolean;
     indentation?: number;
-    additionalRelation?: string[];
+    additionalRelations?: string[];
   };
   constructor(tableData: TableData, options: AutoOptions) {
     this.tableText = tableData.text as { [name: string]: string };
@@ -120,8 +120,8 @@ export class AutoWriter {
         strBelongs += `${sp}${rel.parentModel}.${hasRel}(${rel.childModel}, { ${hAlias}foreignKey: "${rel.parentId}"});\n`;
       }
     });
-    if (this.options.additionalRelation && this.options.additionalRelation.length > 0) {
-      strAdditionals = `\n${sp}//additional relations\n${sp}${this.options.additionalRelation.join(`\n${sp}`)}\n`;
+    if (this.options.additionalRelations && this.options.additionalRelations.length > 0) {
+      strAdditionals = `\n${sp}//additional relations\n${sp}${this.options.additionalRelations.join(`\n${sp}`)}\n`;
     }
     // belongsToMany must come first, custom relations are added at the end
     return strBelongsToMany + strBelongs + strAdditionals;

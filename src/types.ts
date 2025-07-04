@@ -129,8 +129,8 @@ export declare type CaseFileOption = "k" | CaseOption;
 
 export interface AutoOptions {
   additional?: any;
-  additionalTable?: any;
-  additionalRelation?: string[];
+  additionalTables?: any;
+  additionalRelations?: string[];
   /** Case of file names */
   caseFile?: CaseFileOption;
   /** Case of model names */
