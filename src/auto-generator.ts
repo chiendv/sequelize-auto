@@ -249,7 +249,7 @@ export class AutoGenerator {
 
     // Find foreign key
     const foreignKey = this.foreignKeys[table] && this.foreignKeys[table][field] ? this.foreignKeys[table][field] : null;
-    const fieldObj = this.tables[table][field] as Field;
+    const fieldObj = this.tables[table][field] as Field & { get?: string, set?: string };
 
     if (_.isObject(foreignKey)) {
       fieldObj.foreignKey = foreignKey;
@@ -402,6 +402,8 @@ export class AutoGenerator {
 
       } else if (attr === "comment" && (!fieldObj[attr] || this.dialect.name === "mssql")) {
         return true;
+      } else if (attr === "get") {
+        str += space[3] + `${attr}() {\n${space[4]}${fieldObj[attr]}\n${space[3]}}`;
       } else {
         let val = (attr !== "type") ? null : this.getSqType(fieldObj, attr);
         if (val == null) {
@@ -485,7 +487,9 @@ export class AutoGenerator {
     let val = null;
     let typematch = null;
 
-    if (type === "boolean" || type === "bit(1)" || type === "bit" || type === "tinyint(1)") {
+    if(type === 'virtual') {
+      val = 'DataTypes.VIRTUAL';
+    } else if (type === "boolean" || type === "bit(1)" || type === "bit" || type === "tinyint(1)") {
       val = 'DataTypes.BOOLEAN';
 
     // postgres range types
@@ -708,7 +712,7 @@ export class AutoGenerator {
 
   private getTypeScriptFieldOptional(table: string, field: string) {
     const fieldObj = this.tables[table][field];
-    return fieldObj.allowNull;
+    return fieldObj.type === "VIRTUAL" ? true : fieldObj.allowNull;
   }
 
   private getTypeScriptType(table: string, field: string) {
@@ -722,7 +726,9 @@ export class AutoGenerator {
 
     let jsType: string;
 
-    if (this.isArray(fieldType)) {
+    if (fieldObj.type === "VIRTUAL") {
+      jsType = 'any';
+    } else if (this.isArray(fieldType)) {
       const eltype = this.getTypeScriptFieldType(fieldObj, "elementType");
       jsType = eltype + '[]';
     } else if (this.isNumber(fieldType)) {

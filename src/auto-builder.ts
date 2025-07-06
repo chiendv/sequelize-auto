@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { Dialect, QueryInterface, QueryTypes, Sequelize } from "sequelize";
+import { ColumnsDescription, Dialect, QueryInterface, QueryTypes, Sequelize } from "sequelize";
 import { AutoOptions } from ".";
 import { ColumnElementType, ColumnPrecision, DialectOptions, FKRow, FKSpec, TriggerCount } from "./dialects/dialect-options";
 import { dialects } from "./dialects/dialects";
@@ -14,6 +14,7 @@ export class AutoBuilder {
   skipTables?: string[];
   schema?: string;
   views: boolean;
+  additionalTables?: Record<string, any> | undefined;
   tableData: TableData;
 
   constructor(sequelize: Sequelize, options: AutoOptions) {
@@ -24,6 +25,7 @@ export class AutoBuilder {
     this.skipTables = options.skipTables;
     this.schema = options.schema;
     this.views = !!options.views;
+    this.additionalTables = options.additionalTables;
 
     this.tableData = new TableData();
   }
@@ -123,7 +125,11 @@ export class AutoBuilder {
 
   private async mapTable(table: Table) {
     try {
-      const fields = await this.queryInterface.describeTable(table.table_name, table.table_schema);
+      let fields = await this.queryInterface.describeTable(table.table_name, table.table_schema);
+      if (this.additionalTables?.[makeTableQName(table)]?.virtualFields) {
+        fields = this.setVirtualFields(table, fields);
+      }
+
       this.tableData.tables[makeTableQName(table)] = fields;
 
       // for postgres array or user-defined types, get element type
@@ -205,6 +211,19 @@ export class AutoBuilder {
     } catch (err) {
       console.error(err);
     }
+  }
+
+  private setVirtualFields(table: Table, fields: any) {
+    const virtualFields = this.additionalTables?.[makeTableQName(table)]?.virtualFields;
+    Object.keys(virtualFields).forEach(key => {
+      virtualFields[key] = {
+        type: 'VIRTUAL',
+        ...virtualFields[key]
+      };
+    });
+
+    fields = Object.assign(fields, virtualFields);
+    return fields;
   }
 
   private executeQuery<T>(query: string): Promise<T[]> {
