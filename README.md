@@ -10,8 +10,9 @@ Automatically generate models for [SequelizeJS](https://github.com/sequelize/seq
 
 This package is clone and up-to-date with [original package](https://github.com/sequelize/sequelize-auto) plus some additionals options
 
-- additionalTable: Allow to define per-table additional Options and will be overwrite `additional` (if defined) (0.8.9)
-- additionalRelation: Allow to add user custom relations to init-models file (0.8.9)
+Add a option "additionalTables" to define additions properties for each table if defined, with 2 properties:
+- options: Same as and overwrite for "additional" properties if set
+- virtualFields: a get/set value will be added to generated models. This is a plaintext not a callback
 
 
 ## Install
@@ -370,16 +371,25 @@ const auto = new SequelizeAuto('database', 'user', 'pass', {
     caseFile: 'c', // file names created for each model use camelCase.js not snake_case.js
     singularize: true, // convert plural table names to singular model names
     additional: {
-        timestamps: false
+        timestamps: false,
+        paranoid: true
         // ...options added to each model
     },
-    additionalTable: {
-      // override per table
-      "Customer": { paranoid: false },
-      "Product": { timestamps: false }
+    additionalTables: {
+      customer {
+        options: {
+          timestamps: false,
+          paranoid: false
+        },
+        virtualFields: {
+          "full_name": {
+            get: "return `${this.first_name} ${this.last_name}`" //value is plain text add to model get/set function
+          }
+        }
+      }
     },
-    additionalRelation:[
-      Customer.belongsToMany(Product, { as: 'customerProducts', through: OrderItem, foreignKey: "order_id", otherKey: "product_id" });
+    additionalRelations:[
+      `Customer.belongsToMany(Product, { as: 'customerProducts', through: OrderItem, foreignKey: "order_id", otherKey: "product_id" });`
     ],
     tables: ['table1', 'table2', 'myschema.table3'] // use all tables, if omitted
     //...

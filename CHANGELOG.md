@@ -1,10 +1,8 @@
 # sequelize-auto change log
 
-## [0.8.9] - 2025-06-30
-
 * 2 new options bellow only support `Programmatic API`
-* Add `additionalRelation` option to support put self-defined relations to init-Model file
-* Add `additionalTable` option to support define per-table options. This options will overwrite `additional` option
+* Add `additionalRelations` option to support put self-defined relations to init-Model file
+* Add `additionalTables` option to support define per-table options. This options will overwrite `additional` option
 
 ## [0.8.7] - 2021-12-08
 

@@ -21,7 +21,7 @@ export class AutoGenerator {
     caseFile?: CaseFileOption;
     skipFields?: string[];
     additional?: any;
-    additionalTables?: { [tableName: string]: any };
+    additionalTables?: AutoOptions['additionalTables'];
     schema?: string;
     singularize: boolean;
     useDefine: boolean;
@@ -166,7 +166,7 @@ export class AutoGenerator {
 
     const [schemaName, tableNameOrig] = qNameSplit(table);
     const space = this.space;
-    const tableOptions = this.options.additionalTables?.[table] ?? {};
+    const tableOptions = this.options.additionalTables?.[table]?.options ?? {};
     let timestamps = tableOptions?.timestamps != undefined ? tableOptions?.timestamps : (this.options.additional?.timestamps ?? false);
     let paranoid = tableOptions?.paranoid != undefined ? tableOptions?.paranoid : (this.options.additional?.paranoid ?? false);
 
