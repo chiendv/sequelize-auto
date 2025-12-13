@@ -65,6 +65,8 @@ export interface Relation {
   childId?: string;
   /** join entity for many-to-many */
   joinModel?: string;
+  /** target column name */ 
+  targetColumn?: string | null;
   /** One-to-One vs One-to-Many */
   isOne: boolean;
   /** Many-to-Many */

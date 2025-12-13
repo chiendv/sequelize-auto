@@ -111,7 +111,8 @@ export class AutoWriter {
         // const bAlias = (this.options.noAlias && rel.parentModel.toLowerCase() === rel.parentProp.toLowerCase()) ? '' : `as: "${rel.parentProp}", `;
         const asParentProp = recase(this.options.caseProp, rel.parentProp);
         const bAlias = this.options.noAlias ? '' : `as: "${asParentProp}", `;
-        strBelongs += `${sp}${rel.childModel}.belongsTo(${rel.parentModel}, { ${bAlias}foreignKey: "${rel.parentId}"});\n`;
+        const targetKey = rel.targetColumn ? ', targetKey: "' + rel.targetColumn + '"' : '';
+        strBelongs += `${sp}${rel.childModel}.belongsTo(${rel.parentModel}, { ${bAlias}foreignKey: "${rel.parentId}"${targetKey}});\n`;
 
         const hasRel = rel.isOne ? "hasOne" : "hasMany";
         // const hAlias = (this.options.noAlias && Utils.pluralize(rel.childModel.toLowerCase()) === rel.childProp.toLowerCase()) ? '' : `as: "${rel.childProp}", `;

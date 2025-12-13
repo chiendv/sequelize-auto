@@ -38,6 +38,9 @@ export class AutoRelater {
       fkFieldNames.forEach(fkFieldName => {
         const spec = fkFields[fkFieldName];
         if (spec.isForeignKey) {
+          if (spec.foreignSources && spec.foreignSources.target_table && spec.foreignSources.target_schema && td.tables[`${spec.foreignSources.target_schema}.${spec.foreignSources.target_table}`]) {
+            spec.isTargetPrimaryKey = td.tables[`${spec.foreignSources.target_schema}.${spec.foreignSources.target_table}`][`${spec.foreignSources.target_column}`].primaryKey;
+          }
           this.addRelation(t, fkFieldName, spec, fkFields);
         }
       });
@@ -71,6 +74,7 @@ export class AutoRelater {
       childModel: modelName,
       childProp: isOne ? singularize(childAlias) : pluralize(childAlias),
       childTable: qNameJoin(spec.foreignSources.source_schema || schema, spec.foreignSources.source_table),
+      targetColumn: !spec.isTargetPrimaryKey && !spec.isPrimaryKey ? recase(this.caseProp, spec.target_column) : null,
       isOne: isOne,
       isM2M: false
     });
@@ -94,6 +98,7 @@ export class AutoRelater {
           childTable: qNameJoin(otherKey.foreignSources.target_schema || schema, otherKey.foreignSources.target_table),
           childId: otherId,
           joinModel: modelName,
+          targetColumn: null,
           isOne: isOne,
           isM2M: true
         });
