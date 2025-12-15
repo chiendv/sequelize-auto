@@ -381,6 +381,15 @@ const auto = new SequelizeAuto('database', 'user', 'pass', {
           timestamps: false,
           paranoid: false
         },
+        relations: {
+          foreignKey1:{
+            isOne: true,//force relation to hasOne
+            childProp:'tblActual' //rename "as:..."
+          },
+          foreignKey2: {
+            targetKey: 'recordtype' //add 'targetKey' to relation
+          }
+        },
         virtualFields: {
           "full_name": {
             get: "return `${this.first_name} ${this.last_name}`" //value is plain text add to model get/set function

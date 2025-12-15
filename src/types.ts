@@ -69,6 +69,8 @@ export interface Relation {
   isOne: boolean;
   /** Many-to-Many */
   isM2M: boolean;
+  /** target key */
+  targetKey?: string;
 }
 
 export class TableData {

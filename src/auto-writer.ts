@@ -26,6 +26,7 @@ export class AutoWriter {
     spaces?: boolean;
     indentation?: number;
     additionalRelations?: string[];
+    additionalTables?: { [tableName: string]: { options?: any; relations?: any; } };
   };
   constructor(tableData: TableData, options: AutoOptions) {
     this.tableText = tableData.text as { [name: string]: string };
@@ -111,7 +112,14 @@ export class AutoWriter {
         // const bAlias = (this.options.noAlias && rel.parentModel.toLowerCase() === rel.parentProp.toLowerCase()) ? '' : `as: "${rel.parentProp}", `;
         const asParentProp = recase(this.options.caseProp, rel.parentProp);
         const bAlias = this.options.noAlias ? '' : `as: "${asParentProp}", `;
-        strBelongs += `${sp}${rel.childModel}.belongsTo(${rel.parentModel}, { ${bAlias}foreignKey: "${rel.parentId}"});\n`;
+        if (this.options.additionalTables?.[rel.childTable]?.relations?.[rel.parentId]) {
+          rel = { ...rel, ...this.options.additionalTables[rel.childTable].relations[rel.parentId] };
+        }
+        let targetKey = '';
+        if (rel.targetKey) {
+          targetKey = `, targetKey: "${rel.targetKey}"`;
+        }
+        strBelongs += `${sp}${rel.childModel}.belongsTo(${rel.parentModel}, { ${bAlias}foreignKey: "${rel.parentId}"${targetKey} });\n`;
 
         const hasRel = rel.isOne ? "hasOne" : "hasMany";
         // const hAlias = (this.options.noAlias && Utils.pluralize(rel.childModel.toLowerCase()) === rel.childProp.toLowerCase()) ? '' : `as: "${rel.childProp}", `;
