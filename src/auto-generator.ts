@@ -42,7 +42,8 @@ export class AutoGenerator {
 
   makeHeaderTemplate() {
     let header = "";
-    const sp = this.space[1];
+    const spIdx = 1;
+    const sp = this.space[spIdx];
 
     if (this.options.lang === 'ts') {
       header += "import * as Sequelize from 'sequelize';\n";
@@ -55,9 +56,9 @@ export class AutoGenerator {
       header += "class #TABLE# extends Sequelize.Model {\n";
       header += sp + "static init(sequelize, DataTypes) {\n";
       if (this.options.useDefine) {
-        header += sp + "return sequelize.define('#TABLE#', {\n";
+        header += this.space[spIdx + 1] + "return sequelize.define('#TABLE#', {\n";
       } else {
-        header += sp + "return super.init({\n";
+        header += this.space[spIdx + 1] + "return super.init({\n";
       }
     } else if (this.options.lang === 'esm') {
       header += "import _sequelize from 'sequelize';\n";
@@ -65,9 +66,9 @@ export class AutoGenerator {
       header += "export default class #TABLE# extends Model {\n";
       header += sp + "static init(sequelize, DataTypes) {\n";
       if (this.options.useDefine) {
-        header += sp + "return sequelize.define('#TABLE#', {\n";
+        header += this.space[spIdx + 1] + "return sequelize.define('#TABLE#', {\n";
       } else {
-        header += sp + "return super.init({\n";
+        header += this.space[spIdx + 1] + "return super.init({\n";
       }
     } else {
       header += "const Sequelize = require('sequelize');\n";
@@ -132,9 +133,9 @@ export class AutoGenerator {
         }
       }
 
-      str += this.addTable(table);
-
       const lang = this.options.lang;
+      str += this.space[3] + this.addTable(table);
+
       if (lang === 'ts' && this.options.useDefine) {
         str += ") as typeof #TABLE#;\n";
       } else {
@@ -162,7 +163,7 @@ export class AutoGenerator {
   }
 
   // Create a string for the model of the table
-  private addTable(table: string) {
+  private addTable(table: string, spIdx: number=3) {
 
     const [schemaName, tableNameOrig] = qNameSplit(table);
     const space = this.space;
@@ -177,30 +178,33 @@ export class AutoGenerator {
       timestamps ||= this.isTimestampField(field, tableOptions);
       paranoid ||= this.isParanoidField(field, tableOptions);
 
-      str += this.addField(table, field);
+      const tableStr = this.addField(table, field);
+      if (tableStr) {
+        str += space[spIdx] + tableStr;
+      }
     });
 
     // trim off last ",\n"
     str = str.substring(0, str.length - 2) + "\n";
 
     // add the table options
-    str += space[1] + "}, {\n";
+    str += space[2] + "}, {\n";
     if (!this.options.useDefine) {
-      str += space[2] + "sequelize,\n";
+      str += space[spIdx] + "sequelize,\n";
     }
-    str += space[2] + "tableName: '" + tableNameOrig + "',\n";
+    str += space[spIdx] + "tableName: '" + tableNameOrig + "',\n";
 
     if (schemaName && this.dialect.hasSchema) {
-      str += space[2] + "schema: '" + schemaName + "',\n";
+      str += space[spIdx] + "schema: '" + schemaName + "',\n";
     }
 
     if (this.hasTriggerTables[table]) {
-      str += space[2] + "hasTrigger: true,\n";
+      str += space[spIdx] + "hasTrigger: true,\n";
     }
 
-    str += space[2] + "timestamps: " + timestamps + ",\n";
+    str += space[spIdx] + "timestamps: " + timestamps + ",\n";
     if (paranoid) {
-      str += space[2] + "paranoid: true,\n";
+      str += space[spIdx] + "paranoid: true,\n";
     }
 
     // conditionally add additional options
@@ -209,15 +213,15 @@ export class AutoGenerator {
       _.each(this.options.additional, (value, key) => {
         if (key === 'name') {
           // name: true - preserve table name always
-          str += space[2] + "name: {\n";
-          str += space[3] + "singular: '" + table + "',\n";
-          str += space[3] + "plural: '" + table + "'\n";
-          str += space[2] + "},\n";
+          str += space[spIdx] + "name: {\n";
+          str += space[spIdx + 1] + "singular: '" + table + "',\n";
+          str += space[spIdx + 1] + "plural: '" + table + "'\n";
+          str += space[spIdx] + "},\n";
         } else if (key === "timestamps" || key === "paranoid") {
           // handled above
         } else {
           value = _.isBoolean(value) ? value : ("'" + value + "'");
-          str += space[2] + key + ": " + value + ",\n";
+          str += space[spIdx] + key + ": " + value + ",\n";
         }
       });
     }
@@ -227,15 +231,15 @@ export class AutoGenerator {
       str += this.addIndexes(table);
     }
 
-    str = space[2] + str.trim();
+    str = str.trim();
     str = str.substring(0, str.length - 1);
-    str += "\n" + space[1] + "}";
+    str += "\n" + space[2] + "}";
 
     return str;
   }
 
   // Create a string containing field attributes (type, defaultValue, etc.)
-  private addField(table: string, field: string): string {
+  private addField(table: string, field: string, spIdx: number=4): string {
 
     // ignore Sequelize standard fields
     const additional = this.options.additional;
@@ -256,6 +260,7 @@ export class AutoGenerator {
     }
 
     const fieldName = recase(this.options.caseProp, field);
+    const space = this.space;
     let str = this.quoteName(fieldName) + ": {\n";
 
     const quoteWrapper = '"';
@@ -266,7 +271,6 @@ export class AutoGenerator {
       this.dialect.isSerialKey && this.dialect.isSerialKey(fieldObj);
 
     let wroteAutoIncrement = false;
-    const space = this.space;
 
     // column's attributes
     const fieldAttrs = _.keys(fieldObj);
@@ -278,21 +282,21 @@ export class AutoGenerator {
       }
 
       if (isSerialKey && !wroteAutoIncrement) {
-        str += space[3] + "autoIncrement: true,\n";
+        str += space[spIdx] + "autoIncrement: true,\n";
         // Resort to Postgres' GENERATED BY DEFAULT AS IDENTITY instead of SERIAL
         if (this.dialect.name === "postgres" && fieldObj.foreignKey && fieldObj.foreignKey.isPrimaryKey === true &&
           (fieldObj.foreignKey.generation === "ALWAYS" || fieldObj.foreignKey.generation === "BY DEFAULT")) {
-          str += space[3] + "autoIncrementIdentity: true,\n";
+          str += space[spIdx] + "autoIncrementIdentity: true,\n";
         }
         wroteAutoIncrement = true;
       }
 
       if (attr === "foreignKey") {
         if (foreignKey && foreignKey.isForeignKey) {
-          str += space[3] + "references: {\n";
-          str += space[4] + "model: \'" + fieldObj[attr].foreignSources.target_table + "\',\n";
-          str += space[4] + "key: \'" + fieldObj[attr].foreignSources.target_column + "\'\n";
-          str += space[3] + "}";
+          str += space[spIdx] + "references: {\n";
+          str += space[spIdx + 1] + "model: \'" + fieldObj[attr].foreignSources.target_table + "\',\n";
+          str += space[spIdx + 1] + "key: \'" + fieldObj[attr].foreignSources.target_column + "\'\n";
+          str += space[spIdx] + "}";
         } else {
           return true;
         }
@@ -301,22 +305,22 @@ export class AutoGenerator {
         return true;
       } else if (attr === "primaryKey") {
         if (fieldObj[attr] === true && (!_.has(fieldObj, 'foreignKey') || !!fieldObj.foreignKey.isPrimaryKey)) {
-          str += space[3] + "primaryKey: true";
+          str += space[spIdx] + "primaryKey: true";
         } else {
           return true;
         }
       } else if (attr === "autoIncrement") {
         if (fieldObj[attr] === true && !wroteAutoIncrement) {
-          str += space[3] + "autoIncrement: true,\n";
+          str += space[spIdx] + "autoIncrement: true,\n";
           // Resort to Postgres' GENERATED BY DEFAULT AS IDENTITY instead of SERIAL
           if (this.dialect.name === "postgres" && fieldObj.foreignKey && fieldObj.foreignKey.isPrimaryKey === true && (fieldObj.foreignKey.generation === "ALWAYS" || fieldObj.foreignKey.generation === "BY DEFAULT")) {
-            str += space[3] + "autoIncrementIdentity: true,\n";
+            str += space[spIdx] + "autoIncrementIdentity: true,\n";
           }
           wroteAutoIncrement = true;
         }
         return true;
       } else if (attr === "allowNull") {
-        str += space[3] + attr + ": " + fieldObj[attr];
+        str += space[spIdx] + attr + ": " + fieldObj[attr];
       } else if (attr === "defaultValue") {
         let defaultVal = fieldObj.defaultValue;
         if (this.dialect.name === "mssql" && defaultVal && defaultVal.toLowerCase() === '(newid())') {
@@ -358,7 +362,8 @@ export class AutoGenerator {
 
           } else if (field_type.match(/^(json)/)) {
             // don't quote json
-            val_text = defaultVal;
+            // val_text = defaultVal;
+            val_text = fieldObj.defaultValue;
 
           } else if (field_type === 'uuid' && (defaultVal === 'gen_random_uuid()' || defaultVal === 'uuid_generate_v4()')) {
             val_text = "DataTypes.UUIDV4";
@@ -398,19 +403,19 @@ export class AutoGenerator {
         // don't prepend N for MSSQL when building models...
         // defaultVal = _.trimStart(defaultVal, 'N');
 
-        str += space[3] + attr + ": " + val_text;
+        str += space[spIdx] + attr + ": " + val_text;
 
       } else if (attr === "comment" && (!fieldObj[attr] || this.dialect.name === "mssql")) {
         return true;
       } else if (attr === "get") {
-        str += space[3] + `${attr}() {\n${space[4]}${fieldObj[attr]}\n${space[3]}}`;
+        str += space[spIdx] + `${attr}() {\n${space[spIdx + 1]}${fieldObj[attr]}\n${space[spIdx]}}`;
       } else {
         let val = (attr !== "type") ? null : this.getSqType(fieldObj, attr);
         if (val == null) {
           val = (fieldObj as any)[attr];
           val = _.isString(val) ? quoteWrapper + this.escapeSpecial(val) + quoteWrapper : val;
         }
-        str += space[3] + attr + ": " + val;
+        str += space[spIdx] + attr + ": " + val;
       }
 
       str += ",\n";
@@ -418,16 +423,16 @@ export class AutoGenerator {
 
     if (unique) {
       const uniq = _.isString(unique) ? quoteWrapper + unique.replace(/\"/g, '\\"') + quoteWrapper : unique;
-      str += space[3] + "unique: " + uniq + ",\n";
+      str += space[spIdx] + "unique: " + uniq + ",\n";
     }
 
     if (field !== fieldName) {
-      str += space[3] + "field: '" + field + "',\n";
+      str += space[spIdx] + "field: '" + field + "',\n";
     }
 
     // removes the last `,` within the attribute options
     str = str.trim().replace(/,+$/, '') + "\n";
-    str = space[2] + str + space[2] + "},\n";
+    str = str + space[spIdx - 1] + "},\n";
     return str;
   }
 
