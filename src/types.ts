@@ -133,6 +133,7 @@ export interface AutoOptions {
   additional?: any;
   additionalTables?: { [tableName: string]: { options?: any; virtualFields?: any; } };
   additionalRelations?: string[];
+  asOverride?: { [name: string]: string };
   /** Case of file names */
   caseFile?: CaseFileOption;
   /** Case of model names */
