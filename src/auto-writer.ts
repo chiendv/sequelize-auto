@@ -17,7 +17,6 @@ import {
 } from './types';
 const mkdirp = require('mkdirp');
 
-const asOverrideComment = (name: string, value: string) => ` // AS OVERRIDE: ${name} -> ${value}`;
 /** Writes text into files from TableData.text, and writes init-models */
 export class AutoWriter {
   tableText: { [name: string]: string };
@@ -86,6 +85,21 @@ export class AutoWriter {
 
     return Promise.all(promises);
   }
+
+  private overrideAs(parentModel: string, childModel: string, asprop: string) {
+    let comment = '';
+    let asOverride = asprop;
+    let key = `${parentModel}:${childModel}:${asprop}`;
+    if (!this.options.asOverride?.[key]) {
+      key = asprop;
+    }
+    if (this.options.asOverride?.[key]) {
+      asOverride = this.options.asOverride?.[key];
+      comment = ` // AS OVERRIDE: ${key} -> ${asOverride}`;
+    }
+    return { as: asOverride, comment };
+  }
+
   private createInitString(tableNames: string[], assoc: string, lang?: string) {
     switch (lang) {
       case 'ts':
@@ -120,23 +134,20 @@ export class AutoWriter {
     const rels = this.relations;
     rels.forEach((rel) => {
       if (rel.isM2M) {
-        let asprop = recase(this.options.caseProp, pluralize(rel.childProp));
-        let aspropComment = '';
-        if (this.options.asOverride?.[rel.childProp]) {
-          aspropComment = asOverrideComment(asprop, this.options.asOverride?.[rel.childProp]);
-          asprop = this.options.asOverride?.[rel.childProp];
-        }
-
-        strBelongsToMany += `${sp}${rel.parentModel}.belongsToMany(${rel.childModel}, { as: '${asprop}', through: ${rel.joinModel}, foreignKey: "${rel.parentId}", otherKey: "${rel.childId}" });${aspropComment}\n`;
+        const { as: asprop, comment: aspropComment } = this.overrideAs(
+          rel.parentModel,
+          rel.childModel,
+          recase(this.options.caseProp, pluralize(rel.childProp)),
+        );
+        strBelongsToMany += `${sp}${rel.parentModel}.belongsToMany(${rel.childModel}, { as: "${asprop}", through: ${rel.joinModel}, foreignKey: "${rel.parentId}", otherKey: "${rel.childId}" });${aspropComment}\n`;
       } else {
         // const bAlias = (this.options.noAlias && rel.parentModel.toLowerCase() === rel.parentProp.toLowerCase()) ? '' : `as: "${rel.parentProp}", `;
-        let asParentProp = recase(this.options.caseProp, rel.parentProp);
-        let asParentPropComment = '';
-        if (this.options.asOverride?.[rel.parentProp]) {
-          asParentPropComment = asOverrideComment(asParentProp, this.options.asOverride?.[rel.parentProp]);
-          asParentProp = this.options.asOverride?.[rel.parentProp];
-        }
-        const bAlias = this.options.noAlias ? '' : `as: "${asParentProp}", `;
+        const { as: asparentProp, comment: asParentPropComment } = this.overrideAs(
+          rel.parentModel,
+          rel.childModel,
+          recase(this.options.caseProp, rel.parentProp),
+        );
+        const bAlias = this.options.noAlias ? '' : `as: "${asparentProp}", `;
         if (this.options.additionalTables?.[rel.childTable]?.relations?.[rel.parentId]) {
           rel = { ...rel, ...this.options.additionalTables[rel.childTable].relations[rel.parentId] };
         }
@@ -148,12 +159,11 @@ export class AutoWriter {
 
         const hasRel = rel.isOne ? 'hasOne' : 'hasMany';
         // const hAlias = (this.options.noAlias && Utils.pluralize(rel.childModel.toLowerCase()) === rel.childProp.toLowerCase()) ? '' : `as: "${rel.childProp}", `;
-        let asChildProp = recase(this.options.caseProp, rel.childProp);
-        let asChildPropComment = '';
-        if (this.options.asOverride?.[rel.childProp]) {
-          asChildPropComment = asOverrideComment(asChildProp, this.options.asOverride?.[rel.childProp]);
-          asChildProp = this.options.asOverride?.[rel.childProp];
-        }
+        const { as: asChildProp, comment: asChildPropComment } = this.overrideAs(
+          rel.parentModel,
+          rel.childModel,
+          recase(this.options.caseProp, rel.childProp),
+        );
         const hAlias = this.options.noAlias ? '' : `as: "${asChildProp}", `;
         strBelongs += `${sp}${rel.parentModel}.${hasRel}(${rel.childModel}, { ${hAlias}foreignKey: "${rel.parentId}"});${asChildPropComment}\n`;
       }
